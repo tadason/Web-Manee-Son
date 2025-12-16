@@ -3,12 +3,11 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Type definitions for Three.js elements in JSX
-// Extending both 'react' module and global JSX to ensure compatibility
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       instancedMesh: any;
-      boxGeometry: any;
+      sphereGeometry: any; // Changed to sphere for softness
       meshStandardMaterial: any;
       ambientLight: any;
       pointLight: any;
@@ -21,7 +20,7 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       instancedMesh: any;
-      boxGeometry: any;
+      sphereGeometry: any;
       meshStandardMaterial: any;
       ambientLight: any;
       pointLight: any;
@@ -30,44 +29,55 @@ declare global {
   }
 }
 
-// CONCEPT: "The Syntax Lattice"
-// Instead of organic waves, we use Cubes to represent modular code and structure.
-// They float in a more grid-like, mathematical fashion.
-const CodeBlocks = () => {
-  const count = 800;
+// CONCEPT: "The Digital Horizon"
+// A structured, flowing grid of data points. 
+// Represents consistency, vastness, and the "Flow State" of coding.
+const DigitalWave = () => {
+  const rows = 60;
+  const cols = 60;
+  const count = rows * cols;
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
+  // Initialize a grid layout instead of random chaos
   const particles = useMemo(() => {
     const temp = [];
-    for (let i = 0; i < count; i++) {
-      // Structured randomness
-      const x = (Math.random() - 0.5) * 60;
-      const y = (Math.random() - 0.5) * 60;
-      const z = (Math.random() - 0.5) * 40;
-      const speed = 0.005 + Math.random() * 0.02;
-      const rotationSpeed = Math.random() * 0.02;
-      temp.push({ x, y, z, speed, rotationSpeed, time: Math.random() * 100 });
+    const separation = 1.8; // Distance between points
+    for (let x = 0; x < rows; x++) {
+      for (let z = 0; z < cols; z++) {
+        const xPos = (x - rows / 2) * separation;
+        const zPos = (z - cols / 2) * separation;
+        temp.push({ 
+          x: xPos, 
+          z: zPos, 
+          initialY: 0,
+          // Calculate phase based on position for a wave effect
+          phase: (x * 0.1) + (z * 0.1) 
+        });
+      }
     }
     return temp;
-  }, [count]);
+  }, []);
 
   useFrame((state) => {
     if (!mesh.current) return;
+    
+    const time = state.clock.getElapsedTime();
 
     particles.forEach((particle, i) => {
-      // Logic: Float upwards like compiling code or bubbles in a cooling tank
-      particle.y += particle.speed;
-      if (particle.y > 30) particle.y = -30;
-
-      // Gentle rotation representing processing
-      dummy.position.set(particle.x, particle.y, particle.z);
-      dummy.rotation.x += particle.rotationSpeed;
-      dummy.rotation.y += particle.rotationSpeed;
+      // Create a gentle Sine Wave motion
+      // Creates a rolling landscape effect
+      const waveHeight = Math.sin(particle.phase + time * 0.5) * 2;
+      const waveWidth = Math.cos(particle.phase * 0.5 + time * 0.3) * 2;
       
-      // Scale pulse
-      const s = 0.3 + Math.sin(state.clock.getElapsedTime() + i) * 0.1;
-      dummy.scale.set(s, s, s);
+      const y = waveHeight + waveWidth;
+
+      // Position the grid lower and tilted slightly to create depth
+      dummy.position.set(particle.x, y - 10, particle.z - 20);
+      
+      // Dynamic scaling: Higher points are slightly larger (optical illusion of proximity)
+      const scale = 0.08 + (y + 4) * 0.02; 
+      dummy.scale.set(scale, scale, scale);
       
       dummy.updateMatrix();
       mesh.current!.setMatrixAt(i, dummy.matrix);
@@ -77,14 +87,14 @@ const CodeBlocks = () => {
 
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
-      <boxGeometry args={[1, 1, 1]} />
+      {/* Spheres are friendlier and look like "light points" */}
+      <sphereGeometry args={[1, 16, 16]} />
       <meshStandardMaterial 
-        color="#fbbf24" // Amber-400: Represents "Energy/Logic"
-        emissive="#78350f" // Deep amber glow
-        roughness={0.2}
-        metalness={0.8}
-        transparent
-        opacity={0.7}
+        color="#ffffff" 
+        emissive="#fbbf24" // Subtle golden glow (Manee)
+        emissiveIntensity={0.2}
+        roughness={0.1}
+        metalness={0.9} // High metalness for a premium look
       />
     </instancedMesh>
   );
@@ -93,14 +103,20 @@ const CodeBlocks = () => {
 export const ThreeBackground = () => {
   return (
     <div className="fixed inset-0 z-0 bg-neutral-950 pointer-events-none">
-      <Canvas camera={{ position: [0, 0, 40], fov: 60 }}>
-        <ambientLight intensity={0.2} />
-        {/* Dual lighting setup: Amber for warmth, Indigo for deep tech */}
-        <pointLight position={[20, 20, 20]} intensity={2} color="#fbbf24" /> 
-        <pointLight position={[-20, -20, -20]} intensity={2} color="#4338ca" />
-        <CodeBlocks />
-        <fog attach="fog" args={['#0a0a0a', 15, 60]} />
+      <Canvas camera={{ position: [0, 5, 30], fov: 50 }}>
+        <ambientLight intensity={0.5} />
+        {/* Soft, studio-like lighting */}
+        <pointLight position={[20, 30, 20]} intensity={1.5} color="#fbbf24" distance={50} /> 
+        <pointLight position={[-20, 10, -20]} intensity={2} color="#6366f1" distance={50} />
+        
+        <DigitalWave />
+        
+        {/* Deep fog for the "Endless" look */}
+        <fog attach="fog" args={['#0a0a0a', 10, 50]} />
       </Canvas>
+      
+      {/* Overlay Gradient to ensure text readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/30 via-transparent to-neutral-950/80" />
     </div>
   );
 };

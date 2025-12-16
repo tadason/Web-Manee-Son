@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Users, Briefcase, CreditCard, Activity } from 'lucide-react';
+import { Users, Briefcase, CreditCard, Activity, LogOut, Globe } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
@@ -30,20 +30,33 @@ const StatCard = ({ icon: Icon, label, value, color }: any) => (
 );
 
 export const AdminPortal = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen w-full pt-32 px-8 pb-12 z-10 relative">
       <header className="mb-12 max-w-7xl mx-auto flex justify-between items-end border-b border-white/5 pb-6">
         <div>
+          <div className="flex items-center gap-2 mb-2 text-indigo-400">
+             <Globe size={14} />
+             <span className="text-xs font-mono uppercase tracking-widest">Global Access Granted</span>
+          </div>
           <h1 className="text-4xl font-light text-white mb-2">
-            Executive <span className="text-indigo-400 font-serif italic">Overview</span>
+            CEO <span className="text-indigo-400 font-serif italic">Dashboard</span>
           </h1>
-          <p className="text-neutral-500">Manee&Son Global Operations</p>
+          <p className="text-neutral-500">Full visibility: Financials, Personnel, and Projects.</p>
         </div>
-        <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm transition-colors shadow-lg shadow-indigo-500/20 font-medium tracking-wide">
-          Download Report
-        </button>
+        <div className="flex items-center gap-4">
+            <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-sm transition-colors shadow-lg shadow-indigo-500/20 font-medium tracking-wide">
+            Download Report
+            </button>
+            <button 
+            onClick={logout}
+            className="flex items-center gap-2 px-4 py-2 rounded-sm border border-neutral-800 text-neutral-400 hover:text-white hover:border-red-500/50 hover:bg-red-500/10 transition-all duration-300 text-sm font-mono uppercase tracking-wider group"
+            >
+            <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
+            Exit
+            </button>
+        </div>
       </header>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

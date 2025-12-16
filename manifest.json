@@ -1,0 +1,21 @@
+{
+  "name": "Manee&Son",
+  "short_name": "ManeeSon",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "description": "Premium software development agency. Where heritage meets the algorithm.",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/6408/6408894.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/6408/6408894.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

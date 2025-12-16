@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Fingerprint, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, Fingerprint, ArrowRight, Mail, Lock, Chrome, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 import { useNavigate } from 'react-router-dom';
@@ -14,15 +14,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleLogin = (role: UserRole) => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+
+    // Simulation logic for the demo:
+    // If email contains "admin", log in as CEO. Otherwise, Developer.
+    const role = email.toLowerCase().includes('admin') ? UserRole.ADMIN : UserRole.EMPLOYEE;
+
     setTimeout(() => {
       login(role);
       setLoading(false);
       onClose();
       if (role === UserRole.ADMIN) navigate('/admin');
       else navigate('/dashboard');
+    }, 2000);
+  };
+
+  const handleSocialLogin = () => {
+    setLoading(true);
+    // Simulate social login default to User
+    setTimeout(() => {
+      login(UserRole.EMPLOYEE);
+      setLoading(false);
+      onClose();
+      navigate('/dashboard');
     }, 1500);
   };
 
@@ -43,75 +62,110 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 30 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-md bg-neutral-900/90 backdrop-blur-2xl border border-amber-500/20 shadow-[0_0_50px_rgba(251,191,36,0.1)] rounded-xl p-8 overflow-hidden"
+            className="relative w-full max-w-sm bg-neutral-900/90 backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_rgba(251,191,36,0.1)] rounded-2xl p-8 overflow-hidden"
           >
             {/* Subtle Industrial Texture */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 pointer-events-none"></div>
 
             <button 
               onClick={onClose}
-              className="absolute top-6 right-6 text-neutral-500 hover:text-white transition-colors"
+              className="absolute top-6 right-6 text-neutral-500 hover:text-white transition-colors z-20"
             >
               <X size={20} />
             </button>
 
-            <div className="mb-10 text-center relative z-10">
-              <div className="w-16 h-16 bg-amber-500/10 rounded-full mx-auto mb-6 flex items-center justify-center border border-amber-500/30">
-                <ShieldCheck className="text-amber-500" size={24} />
-              </div>
-              <h2 className="text-2xl font-light text-white tracking-wide mb-2">Manee<span className="text-amber-500">&</span>Son</h2>
-              <p className="text-neutral-400 text-sm">Authorized Personnel Only</p>
-            </div>
-
             {loading ? (
-              <div className="h-48 flex flex-col items-center justify-center space-y-4">
+              <div className="h-[400px] flex flex-col items-center justify-center space-y-6">
                 <motion.div
-                  animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  animate={{ 
+                    scale: [1, 1.1, 1], 
+                    opacity: [0.5, 1, 0.5],
+                    filter: ["blur(0px)", "blur(2px)", "blur(0px)"]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="relative"
                 >
-                  <Fingerprint size={64} className="text-amber-500" />
+                  <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full"></div>
+                  <Fingerprint size={80} className="text-amber-500 relative z-10" />
                 </motion.div>
-                <p className="text-amber-500/60 text-xs tracking-widest uppercase animate-pulse">Authenticating Identity...</p>
+                <div className="text-center space-y-2">
+                  <p className="text-white font-light tracking-widest text-lg">VERIFYING</p>
+                  <p className="text-amber-500/60 text-xs font-mono uppercase">Biometric Handshake...</p>
+                </div>
               </div>
             ) : (
-              <div className="space-y-4 relative z-10">
-                <button
-                  onClick={() => handleLogin(UserRole.EMPLOYEE)}
-                  className="group relative w-full bg-white/5 hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/50 text-white p-4 rounded-lg flex items-center justify-between transition-all duration-300"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded bg-neutral-800 flex items-center justify-center">
-                      <span className="text-xs font-mono font-bold text-amber-500">{`</>`}</span>
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-medium group-hover:text-amber-400 transition-colors">Developer Access</div>
-                      <div className="text-xs text-neutral-500">Engineering & QA</div>
-                    </div>
-                  </div>
-                  <ArrowRight size={18} className="text-neutral-600 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
-                </button>
+              <div className="relative z-10">
+                <div className="mb-8 text-center">
+                  <h2 className="text-2xl font-medium text-white tracking-tight mb-2">Welcome Back</h2>
+                  <p className="text-neutral-500 text-sm">Enter your credentials to access the lattice.</p>
+                </div>
 
-                <button
-                  onClick={() => handleLogin(UserRole.ADMIN)}
-                  className="group relative w-full bg-white/5 hover:bg-indigo-500/10 border border-white/10 hover:border-indigo-500/50 text-white p-4 rounded-lg flex items-center justify-between transition-all duration-300"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded bg-neutral-800 flex items-center justify-center">
-                      <span className="text-xs font-mono font-bold text-indigo-400">EXE</span>
-                    </div>
-                    <div className="text-left">
-                      <div className="text-sm font-medium group-hover:text-indigo-400 transition-colors">Executive Portal</div>
-                      <div className="text-xs text-neutral-500">Administration</div>
-                    </div>
+                <div className="space-y-4">
+                  {/* Social Login */}
+                  <button 
+                    onClick={handleSocialLogin}
+                    className="w-full bg-white text-black hover:bg-neutral-200 font-medium py-3 rounded-lg flex items-center justify-center gap-3 transition-all duration-300"
+                  >
+                    <Chrome size={18} />
+                    <span className="text-sm">Continue with Google</span>
+                  </button>
+
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-white/10"></div>
+                    <span className="flex-shrink mx-4 text-neutral-600 text-xs uppercase tracking-widest">Or</span>
+                    <div className="flex-grow border-t border-white/10"></div>
                   </div>
-                  <ArrowRight size={18} className="text-neutral-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
-                </button>
+
+                  {/* Email / Password Form */}
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-amber-500 transition-colors" size={18} />
+                        <input
+                          type="email"
+                          placeholder="Email Address"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 focus:border-amber-500/50 text-white placeholder-neutral-600 pl-12 pr-4 py-3 rounded-lg outline-none transition-all duration-300 font-light text-sm"
+                        />
+                      </div>
+                      
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-amber-500 transition-colors" size={18} />
+                        <input
+                          type="password"
+                          placeholder="Password"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 focus:border-amber-500/50 text-white placeholder-neutral-600 pl-12 pr-4 py-3 rounded-lg outline-none transition-all duration-300 font-light text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                       <button type="button" className="text-xs text-neutral-500 hover:text-amber-500 transition-colors">Forgot Password?</button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold py-3.5 rounded-lg flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] transition-all duration-300"
+                    >
+                      <span>Sign In</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </form>
+                </div>
+
+                <div className="mt-8 text-center">
+                   <p className="text-[10px] text-neutral-600">
+                     <span className="block mb-1">DEMO CREDENTIALS:</span>
+                     Type <span className="text-indigo-400 font-mono">admin</span> in email for CEO Dashboard.
+                   </p>
+                </div>
               </div>
             )}
-            
-            <div className="mt-8 text-center">
-               <p className="text-[10px] text-neutral-600 uppercase tracking-[0.2em]">System v2.4.0 • Encrypted</p>
-            </div>
           </motion.div>
         </div>
       )}
