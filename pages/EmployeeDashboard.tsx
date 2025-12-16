@@ -1,21 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Terminal, GitPullRequest, Layout, MoreHorizontal } from 'lucide-react';
+import { Terminal, GitPullRequest, Layout, MoreHorizontal, LogOut, Lock } from 'lucide-react';
 import { Project } from '../types';
 
 const projects: Project[] = [
-  { id: 1, name: "Core API Migration", status: "In Progress", progress: 78 },
-  { id: 2, name: "Client: Stark Industries", status: "Review", progress: 95 },
-  { id: 3, name: "Internal Tooling", status: "Completed", progress: 100 },
+  { id: 1, name: "Feature: Auth Integration", status: "In Progress", progress: 78 },
+  { id: 2, name: "Bugfix: Checkout Flow", status: "Review", progress: 95 },
+  { id: 3, name: "Unit Tests: Payment Gateway", status: "Completed", progress: 100 },
 ];
 
 export const EmployeeDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen w-full pt-32 px-8 pb-12 z-10 relative">
-      <header className="mb-12 max-w-7xl mx-auto border-b border-white/5 pb-8">
+      <header className="mb-12 max-w-7xl mx-auto border-b border-white/5 pb-8 flex justify-between items-end">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -23,11 +23,22 @@ export const EmployeeDashboard = () => {
         >
           <div className="flex items-center gap-3 mb-2">
             <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-            <span className="text-amber-500 font-mono text-xs uppercase tracking-widest">System Online</span>
+            <span className="text-amber-500 font-mono text-xs uppercase tracking-widest">Workspace Active</span>
           </div>
-          <h1 className="text-4xl font-light text-white mb-2">Developer Console</h1>
-          <p className="text-neutral-500">Logged in as {user?.name}. Sprint 42 Active.</p>
+          <h1 className="text-4xl font-light text-white mb-2">My Projects</h1>
+          <div className="flex items-center gap-2 text-neutral-500 text-sm">
+             <Lock size={12} />
+             <p>Restricted View • Logged in as {user?.name}</p>
+          </div>
         </motion.div>
+
+        <button 
+          onClick={logout}
+          className="flex items-center gap-2 px-4 py-2 rounded-sm border border-neutral-800 text-neutral-400 hover:text-white hover:border-amber-500/50 hover:bg-amber-500/10 transition-all duration-300 text-sm font-mono uppercase tracking-wider group"
+        >
+          <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
+          Disconnect
+        </button>
       </header>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -50,13 +61,16 @@ export const EmployeeDashboard = () => {
             </div>
             
             <h3 className="text-lg font-mono text-white mb-1">{project.name}</h3>
-            <span className={`text-[10px] px-2 py-0.5 rounded border uppercase tracking-wider ${
-              project.status === 'Completed' ? 'bg-green-500/5 border-green-500/20 text-green-400' :
-              project.status === 'Review' ? 'bg-indigo-500/5 border-indigo-500/20 text-indigo-400' :
-              'bg-amber-500/5 border-amber-500/20 text-amber-500'
-            }`}>
-              {project.status}
-            </span>
+            <div className="flex justify-between items-center mt-2 mb-4">
+                <span className={`text-[10px] px-2 py-0.5 rounded border uppercase tracking-wider ${
+                project.status === 'Completed' ? 'bg-green-500/5 border-green-500/20 text-green-400' :
+                project.status === 'Review' ? 'bg-indigo-500/5 border-indigo-500/20 text-indigo-400' :
+                'bg-amber-500/5 border-amber-500/20 text-amber-500'
+                }`}>
+                {project.status}
+                </span>
+                <span className="text-[10px] text-neutral-600 font-mono">ASSIGNED TO YOU</span>
+            </div>
 
             <div className="mt-8">
               <div className="flex justify-between text-xs text-neutral-500 mb-2 font-mono">
@@ -83,7 +97,7 @@ export const EmployeeDashboard = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <GitPullRequest className="text-neutral-500" size={18} />
-            <h3 className="text-lg font-medium text-white">Recent Commits</h3>
+            <h3 className="text-lg font-medium text-white">Your Recent Commits</h3>
           </div>
           <div className="space-y-4">
              {[1,2,3].map((_, i) => (
@@ -104,7 +118,7 @@ export const EmployeeDashboard = () => {
         >
            <Layout size={40} className="text-indigo-500 mb-4" />
            <h3 className="text-xl font-medium text-white">Ticket Queue Empty</h3>
-           <p className="text-neutral-500 mt-2 max-w-xs text-sm">All urgent logic has been implemented. Ready for next architectural review.</p>
+           <p className="text-neutral-500 mt-2 max-w-xs text-sm">You have no other assigned tasks pending approval.</p>
         </motion.div>
       </div>
     </div>

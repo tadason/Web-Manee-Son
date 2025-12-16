@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { LoginModal } from '../components/LoginModal';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { MapPin, ArrowUpRight } from 'lucide-react';
 
 export const Landing = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -35,22 +36,60 @@ export const Landing = () => {
       </motion.button>
 
       {/* Hero Section */}
-      <section className="h-screen flex items-center justify-center sticky top-0 overflow-hidden">
-        <motion.div style={{ y: y1, opacity: opacity1 }} className="text-center z-10 px-4">
+      <section className="min-h-screen flex items-center justify-center sticky top-0 overflow-hidden py-20">
+        <motion.div style={{ y: y1, opacity: opacity1 }} className="text-center z-10 px-4 w-full max-w-4xl mx-auto flex flex-col items-center">
           <p className="text-amber-500 font-mono text-sm tracking-[0.3em] mb-4">EST. 2024</p>
           <h1 className="text-7xl md:text-9xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 mb-6">
             Manee<span className="text-amber-500">&</span>Son
           </h1>
-          <p className="text-xl text-neutral-400 font-light tracking-wide max-w-2xl mx-auto mb-8">
+          <p className="text-xl text-neutral-400 font-light tracking-wide max-w-2xl mx-auto mb-16">
             Generations of logic. Bespoke software architecture.
           </p>
-          <motion.button 
-             whileHover={{ scale: 1.05 }}
-             onClick={() => setIsLoginOpen(true)}
-             className="px-10 py-4 bg-amber-500 text-black rounded-sm font-semibold tracking-wider hover:bg-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.3)] transition-all"
+          
+          {/* Company Info - Frameless Design */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="w-full flex flex-col items-center relative z-20"
           >
-            INITIALIZE
-          </motion.button>
+             <div className="flex flex-col items-center">
+                <div className="flex items-baseline gap-3 mb-2">
+                   <h3 className="text-3xl font-light text-white tracking-tight">66 TOWER</h3>
+                   <span className="text-amber-500 font-mono text-[10px] uppercase tracking-[0.2em]">Level 4</span>
+                </div>
+
+                <p className="text-sm text-neutral-400 font-light leading-relaxed mb-8 text-center">
+                  No. 2556 Sukhumvit Road, Bangna<br/>
+                  Bangkok, 10260, Thailand
+                </p>
+
+                <a 
+                  href="https://maps.app.goo.gl/gXgALhY3P4pjpouMA" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="group/btn relative flex items-center justify-center gap-3 px-8 py-3 mb-12 overflow-hidden"
+                >
+                   {/* Minimal underline hover effect */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[1px] bg-white/20 group-hover/btn:w-full group-hover/btn:bg-amber-500 transition-all duration-500"></div>
+                  
+                  <MapPin size={14} className="text-neutral-500 group-hover/btn:text-amber-500 transition-colors" />
+                  <span className="text-xs font-bold text-neutral-300 group-hover/btn:text-white tracking-widest uppercase transition-colors">Locate HQ</span>
+                  <ArrowUpRight size={12} className="text-neutral-500 opacity-50 group-hover/btn:opacity-100 group-hover/btn:text-amber-500 transition-all" />
+                </a>
+
+                {/* Technical Footer - Floating */}
+                <div className="flex flex-col gap-1 items-center opacity-40 hover:opacity-80 transition-opacity duration-500 cursor-default">
+                   <div className="text-[10px] font-mono text-neutral-500 tracking-wider">
+                      REG NO. 0105567249062
+                   </div>
+                   <div className="text-[10px] font-mono text-neutral-500">
+                      © MANEE & SON LIMITED 2024
+                   </div>
+                </div>
+             </div>
+          </motion.div>
+
         </motion.div>
       </section>
 
