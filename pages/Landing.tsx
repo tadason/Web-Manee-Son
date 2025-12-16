@@ -39,13 +39,11 @@ export const Landing = () => {
       <section className="min-h-screen flex items-center justify-center sticky top-0 overflow-hidden py-20">
         <motion.div style={{ y: y1, opacity: opacity1 }} className="text-center z-10 px-4 w-full max-w-4xl mx-auto flex flex-col items-center">
           <p className="text-amber-500 font-mono text-sm tracking-[0.3em] mb-4">EST. 2024</p>
-          {/* Main Title - Adjusted for mobile fit */}
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 mb-6 uppercase">
-            MANEE<span className="text-amber-500"> & </span>SON LIMITED
+          <h1 className="text-7xl md:text-9xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 mb-6">
+            Manee<span className="text-amber-500">&</span>Son
           </h1>
-          {/* Subtitle - Corporate Consultancy Services */}
-          <p className="text-xl md:text-2xl text-neutral-300 font-light tracking-wide max-w-3xl mx-auto mb-20 leading-relaxed capitalize">
-            corporate consultancy services
+          <p className="text-2xl md:text-3xl text-neutral-300 font-light tracking-wide max-w-3xl mx-auto mb-20 leading-relaxed">
+            Generations of logic. Bespoke software architecture.
           </p>
           
           {/* Company Info - Frameless Design */}
