@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ฟังก์ชันตรวจสอบว่าเป็น Admin หรือไม่ (ตรวจสอบจาก Custom Claims หรือ Email List ที่ระบุ)
+    // ใน Production จริงควรใช้ Custom Claims แต่สำหรับ MVP เร่งด่วน เราจะเช็ค Email ตรงๆ เพื่อความชัวร์
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.email in ['puttipong@manee-son.com', 'dev-projectai@manee-son.com']; 
+             // ⚠️ ใส่ Email Admin จริงๆ ของคุณตรงนี้
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // --- AppTada Collection ---
+    // User ทั่วไป: อ่านได้ (ถ้าระบบเปิด) หรืออ่านได้เฉพาะของตัวเอง (แล้วแต่ Business Logic)
+    // Admin: อ่าน/เขียนได้ทั้งหมด
+    match /apps/{appId} {
+      // ตัวอย่าง: ยอมให้ทุกคนที่ Login สร้าง App ได้
+      allow create: if isAuthenticated();
+      // ยอมให้เจ้าของ App หรือ Admin เท่านั้นที่แก้ไข/ลบ
+      allow update, delete: if isAuthenticated() && (resource.data.createdBy == request.auth.token.email || isAdmin());
+      // ยอมให้ทุกคนที่ Login อ่านได้ (Public Gallery)
+      allow read: if isAuthenticated();
+    }
+
+    // --- Users Collection (ถ้ามี) ---
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+    
+    // --- Default: ปิดประตูตายสำหรับ Collection อื่นๆ ที่ไม่ได้ระบุ ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

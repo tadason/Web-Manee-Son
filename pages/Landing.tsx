@@ -4,6 +4,7 @@ import { LoginModal } from '../components/LoginModal';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { MapPin, ArrowUpRight } from 'lucide-react';
+import { UserRole } from '../types';
 
 export const Landing = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -11,17 +12,7 @@ export const Landing = () => {
   const { user } = useAuth();
   const location = useLocation();
   const redirectState = location.state as { redirectTo?: string } | null;
-  let storedRedirect: string | null = null;
-  if (typeof window !== 'undefined') {
-    try {
-      storedRedirect = sessionStorage.getItem('postLoginRedirect');
-    } catch (error) {
-      console.warn('Unable to read post-login redirect.', error);
-      storedRedirect = null;
-    }
-  }
-  const redirectTo = redirectState?.redirectTo || storedRedirect || '/apptada.tsx';
-  const redirectToFromState = redirectState?.redirectTo;
+  const mapUrl = 'https://www.google.com/maps?q=66%20Tower%20Sukhumvit%20Road%20Bangkok';
   
   // Parallax transforms
   const y1 = useTransform(scrollY, [0, 500], [0, 200]);
@@ -30,28 +21,27 @@ export const Landing = () => {
   const y2 = useTransform(scrollY, [200, 800], [100, 0]);
   const opacity2 = useTransform(scrollY, [200, 500, 800], [0, 1, 0]);
 
+  // --- LOGIC การแยกหน้า ADMIN / USER (แก้ไขตามโจทย์) ---
   if (user) {
-    return <Navigate to={redirectTo} replace />;
+    // 1. ถ้ามี Redirect เดิมค้างอยู่ ให้ไปหน้านั้นก่อน
+    if (redirectState?.redirectTo) {
+        return <Navigate to={redirectState.redirectTo} replace />;
+    }
+
+    // 2. ถ้า Login ปกติ ให้แยกตาม Role
+    if (user.role === UserRole.ADMIN) {
+        return <Navigate to="/admin" replace />; // CEO Dashboard
+    } else {
+        // User ทั่วไป ให้ไปหน้า AppTada
+        return <Navigate to="/apptada" replace />; 
+    }
   }
+  // ---------------------------------------------------
 
-  React.useEffect(() => {
-    if (redirectState?.redirectTo && !user) {
-      setIsLoginOpen(true);
-    }
-  }, [redirectState?.redirectTo, user]);
-
-  React.useEffect(() => {
-    if (!user || !storedRedirect) return;
-    try {
-      sessionStorage.removeItem('postLoginRedirect');
-    } catch (error) {
-      console.warn('Unable to clear post-login redirect.', error);
-    }
-  }, [user, storedRedirect]);
 
   return (
     <div className="relative w-full min-h-[200vh] text-white selection:bg-amber-500/30">
-      {/* Login Orb - Amber Glow */}
+      {/* Login Orb */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
@@ -66,20 +56,17 @@ export const Landing = () => {
       {/* Hero Section */}
       <section className="min-h-screen flex items-center justify-center sticky top-0 overflow-hidden py-20">
         <motion.div style={{ y: y1, opacity: opacity1 }} className="text-center z-10 px-4 w-full max-w-4xl mx-auto flex flex-col items-center">
-          <p className="text-amber-500 font-mono text-sm tracking-[0.3em] mb-4">EST. 2024</p>
-          {/* Main Title - Adjusted for mobile fit */}
           <div className="relative inline-block group mb-6">
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 uppercase">
               MANEE<span className="text-amber-500">&</span>SON LIMITED
             </h1>
             <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-[2px] bg-white/20 group-hover:w-full group-hover:bg-amber-500 transition-all duration-500"></span>
           </div>
-          {/* Subtitle - Corporate Consultancy Services */}
           <p className="text-xl md:text-2xl text-neutral-300 font-light tracking-wide max-w-3xl mx-auto mb-20 leading-relaxed capitalize">
             corporate consultancy services
           </p>
           
-          {/* Company Info - Frameless Design */}
+          {/* Company Info */}
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -97,21 +84,20 @@ export const Landing = () => {
                   Bangkok, 10260, Thailand
                 </p>
 
-                <a 
-                  href="https://maps.app.goo.gl/gXgALhY3P4pjpouMA" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="group/btn relative flex items-center justify-center gap-3 px-10 py-4 mb-14 overflow-hidden"
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group mt-4 inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-amber-200/80 transition-colors duration-300 hover:text-amber-200"
                 >
-                   {/* Minimal underline hover effect */}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-[1px] bg-white/20 group-hover/btn:w-full group-hover/btn:bg-amber-500 transition-all duration-500"></div>
-                  
-                  <MapPin size={16} className="text-neutral-500 group-hover/btn:text-amber-500 transition-colors" />
-                  <span className="text-sm font-bold text-neutral-300 group-hover/btn:text-white tracking-widest uppercase transition-colors">Locate HQ</span>
-                  <ArrowUpRight size={14} className="text-neutral-500 opacity-50 group-hover/btn:opacity-100 group-hover/btn:text-amber-500 transition-all" />
+                  <MapPin size={14} className="text-amber-400/80" />
+                  <span className="relative inline-block">
+                    Locate HQ
+                    <span className="absolute -bottom-1 left-1/2 h-px w-8 -translate-x-1/2 bg-amber-400/50 transition-all duration-300 group-hover:w-full group-hover:bg-amber-400" />
+                  </span>
+                  <ArrowUpRight size={14} className="opacity-60 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </a>
 
-                {/* Technical Footer - Enhanced Visibility */}
                 <div className="flex flex-col gap-2 items-center mt-4">
                    <div className="text-sm md:text-base font-mono text-neutral-300 tracking-widest font-semibold border-b border-white/10 pb-1">
                       REG NO. 0105567249062
@@ -126,31 +112,10 @@ export const Landing = () => {
         </motion.div>
       </section>
 
-      {/* Value Prop Section */}
-      <section className="h-screen flex items-center justify-center relative z-10 pointer-events-none">
-        <motion.div style={{ y: y2, opacity: opacity2 }} className="max-w-5xl text-center px-4">
-          <h2 className="text-4xl md:text-6xl font-light tracking-tight leading-tight text-neutral-200">
-            We don't just write code. <br /> We craft <span className="text-indigo-400 font-normal">digital heritage</span>.
-          </h2>
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { title: "Architectural Precision", desc: "Scalable backend systems designed to outlast trends." },
-              { title: "Seamless Integration", desc: "Connecting legacy logic with next-gen frameworks." },
-              { title: "Algorithmic Design", desc: "Efficiency interwoven with aesthetic excellence." }
-            ].map((item, i) => (
-              <div key={i} className="p-8 rounded-sm bg-neutral-900/40 backdrop-blur-md border border-white/5 hover:border-amber-500/30 transition-colors">
-                <h3 className="text-lg font-bold text-white mb-3 uppercase tracking-wider">{item.title}</h3>
-                <p className="text-neutral-300 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </section>
-
+      {/* Login Modal Component */}
       <LoginModal
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
-        redirectTo={redirectTo}
       />
     </div>
   );
