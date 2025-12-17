@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThreeBackground } from './components/ThreeBackground';
 import { InvisibleNav } from './components/InvisibleNav';
@@ -7,6 +7,7 @@ import { InstallPrompt } from './components/InstallPrompt';
 import { Landing } from './pages/Landing';
 import { EmployeeDashboard } from './pages/EmployeeDashboard';
 import { AdminPortal } from './pages/AdminPortal';
+import AppTadaPage from './pages/apptada';
 import { UserRole } from './types';
 
 // Protected Route Wrapper
@@ -31,7 +32,7 @@ const ProtectedRoute: React.FC<{
 
 const AppContent = () => {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div className="relative min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-cyan-500/30">
         <ThreeBackground />
         <InvisibleNav />
@@ -39,6 +40,7 @@ const AppContent = () => {
         
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/apptada.tsx" element={<AppTadaPage />} />
           
           <Route 
             path="/dashboard" 
@@ -61,7 +63,7 @@ const AppContent = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 

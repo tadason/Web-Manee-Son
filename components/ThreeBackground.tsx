@@ -36,13 +36,14 @@ const DigitalWave = () => {
   const rows = 60;
   const cols = 60;
   const count = rows * cols;
+  const verticalOffset = -6; // Push the entire wave lower on screen
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
   // Initialize a grid layout instead of random chaos
   const particles = useMemo(() => {
     const temp = [];
-    const separation = 1.8; // Distance between points
+    const separation = 1.0; // Distance between points
     for (let x = 0; x < rows; x++) {
       for (let z = 0; z < cols; z++) {
         const xPos = (x - rows / 2) * separation;
@@ -73,10 +74,10 @@ const DigitalWave = () => {
       const y = waveHeight + waveWidth;
 
       // Position the grid lower and tilted slightly to create depth
-      dummy.position.set(particle.x, y - 10, particle.z - 20);
+      dummy.position.set(particle.x, y + verticalOffset, particle.z);
       
       // Dynamic scaling: Higher points are slightly larger (optical illusion of proximity)
-      const scale = 0.08 + (y + 4) * 0.02; 
+      const scale = (0.2 + (y + 4) * 0.05) * 0.3; // Base scale adjusted for visibility
       dummy.scale.set(scale, scale, scale);
       
       dummy.updateMatrix();
@@ -102,8 +103,12 @@ const DigitalWave = () => {
 
 export const ThreeBackground = () => {
   return (
-    <div className="fixed inset-0 z-0 bg-neutral-950 pointer-events-none">
-      <Canvas camera={{ position: [0, 5, 30], fov: 50 }}>
+    <div className="fixed inset-0 z-0 w-screen h-screen bg-neutral-950 pointer-events-none overflow-hidden">
+      <Canvas 
+        dpr={window.devicePixelRatio} 
+        className="w-full h-full" 
+        camera={{ position: [0, 5, 30], fov: 75 }}
+      >
         <ambientLight intensity={0.5} />
         {/* Soft, studio-like lighting */}
         <pointLight position={[20, 30, 20]} intensity={1.5} color="#fbbf24" distance={50} /> 
@@ -112,7 +117,7 @@ export const ThreeBackground = () => {
         <DigitalWave />
         
         {/* Deep fog for the "Endless" look */}
-        <fog attach="fog" args={['#0a0a0a', 10, 50]} />
+        <fog attach="fog" args={["#0a0a0a", 5, 30]} />
       </Canvas>
       
       {/* Overlay Gradient to ensure text readability */}
