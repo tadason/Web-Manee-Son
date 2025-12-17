@@ -8,13 +8,16 @@ export interface User {
   name: string;
   role: UserRole;
   avatar: string;
+  email?: string;
 }
 
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  login: (role: UserRole) => void;
-  logout: () => void;
+  authLoading: boolean;
+  authError: string | null;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export interface Project {

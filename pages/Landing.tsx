@@ -2,13 +2,26 @@ import React, { useState } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { LoginModal } from '../components/LoginModal';
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { MapPin, ArrowUpRight } from 'lucide-react';
 
 export const Landing = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const { scrollY } = useScroll();
   const { user } = useAuth();
+  const location = useLocation();
+  const redirectState = location.state as { redirectTo?: string } | null;
+  let storedRedirect: string | null = null;
+  if (typeof window !== 'undefined') {
+    try {
+      storedRedirect = sessionStorage.getItem('postLoginRedirect');
+    } catch (error) {
+      console.warn('Unable to read post-login redirect.', error);
+      storedRedirect = null;
+    }
+  }
+  const redirectTo = redirectState?.redirectTo || storedRedirect || '/apptada.tsx';
+  const redirectToFromState = redirectState?.redirectTo;
   
   // Parallax transforms
   const y1 = useTransform(scrollY, [0, 500], [0, 200]);
@@ -18,8 +31,23 @@ export const Landing = () => {
   const opacity2 = useTransform(scrollY, [200, 500, 800], [0, 1, 0]);
 
   if (user) {
-    return <Navigate to={user.role === 'ADMIN' ? '/admin' : '/dashboard'} replace />;
+    return <Navigate to={redirectTo} replace />;
   }
+
+  React.useEffect(() => {
+    if (redirectState?.redirectTo && !user) {
+      setIsLoginOpen(true);
+    }
+  }, [redirectState?.redirectTo, user]);
+
+  React.useEffect(() => {
+    if (!user || !storedRedirect) return;
+    try {
+      sessionStorage.removeItem('postLoginRedirect');
+    } catch (error) {
+      console.warn('Unable to clear post-login redirect.', error);
+    }
+  }, [user, storedRedirect]);
 
   return (
     <div className="relative w-full min-h-[200vh] text-white selection:bg-amber-500/30">
@@ -40,9 +68,12 @@ export const Landing = () => {
         <motion.div style={{ y: y1, opacity: opacity1 }} className="text-center z-10 px-4 w-full max-w-4xl mx-auto flex flex-col items-center">
           <p className="text-amber-500 font-mono text-sm tracking-[0.3em] mb-4">EST. 2024</p>
           {/* Main Title - Adjusted for mobile fit */}
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 mb-6 uppercase">
-            MANEE<span className="text-amber-500">&</span>SON LIMITED
-          </h1>
+          <div className="relative inline-block group mb-6">
+            <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 uppercase">
+              MANEE<span className="text-amber-500">&</span>SON LIMITED
+            </h1>
+            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-[2px] bg-white/20 group-hover:w-full group-hover:bg-amber-500 transition-all duration-500"></span>
+          </div>
           {/* Subtitle - Corporate Consultancy Services */}
           <p className="text-xl md:text-2xl text-neutral-300 font-light tracking-wide max-w-3xl mx-auto mb-20 leading-relaxed capitalize">
             corporate consultancy services
@@ -116,7 +147,11 @@ export const Landing = () => {
         </motion.div>
       </section>
 
-      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        redirectTo={redirectTo}
+      />
     </div>
   );
 };

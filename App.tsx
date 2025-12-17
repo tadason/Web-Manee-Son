@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThreeBackground } from './components/ThreeBackground';
 import { InvisibleNav } from './components/InvisibleNav';
@@ -15,10 +15,22 @@ const ProtectedRoute: React.FC<{
   children: React.ReactNode; 
   allowedRoles?: UserRole[] 
 }> = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, authLoading } = useAuth();
+  const location = useLocation();
+
+  if (authLoading) {
+    return null;
+  }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/" replace />;
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('postLoginRedirect', location.pathname);
+      } catch (error) {
+        console.warn('Unable to store post-login redirect.', error);
+      }
+    }
+    return <Navigate to="/" replace state={{ redirectTo: location.pathname }} />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -30,39 +42,49 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
+const AppShell = () => {
+  const location = useLocation();
+  const hideBackground = location.pathname.startsWith('/apptada');
+
+  return (
+    <div className="relative z-10 min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-cyan-500/30">
+      {!hideBackground && <ThreeBackground />}
+      <InvisibleNav />
+      <InstallPrompt />
+      
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/apptada.tsx" element={<AppTadaPage />} />
+        <Route path="/apptada" element={<AppTadaPage />} />
+        
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={[UserRole.EMPLOYEE, UserRole.ADMIN]}>
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminPortal />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
+  );
+};
+
 const AppContent = () => {
   return (
     <BrowserRouter>
-      <div className="relative min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-cyan-500/30">
-        <ThreeBackground />
-        <InvisibleNav />
-        <InstallPrompt />
-        
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/apptada.tsx" element={<AppTadaPage />} />
-          
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.EMPLOYEE, UserRole.ADMIN]}>
-                <EmployeeDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-                <AdminPortal />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+      <AppShell />
     </BrowserRouter>
   );
 };
