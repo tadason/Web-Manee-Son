@@ -1,8 +1,5 @@
-const CACHE_NAME = 'manee-son-v1';
-const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-];
+const CACHE_NAME = 'manee-son-v2';
+const URLS_TO_CACHE = ['/', '/index.html'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -11,46 +8,55 @@ self.addEventListener('install', (event) => {
         return cache.addAll(URLS_TO_CACHE);
       })
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
+  const { request } = event;
+
+  // Network-first for navigation requests to avoid stale HTML/JS causing blank screen
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/', copy));
           return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Cache-first for everything else
+  event.respondWith(
+    caches.match(request).then((response) => {
+      if (response) return response;
+
+      return fetch(request).then((networkResponse) => {
+        if (
+          !networkResponse ||
+          networkResponse.status !== 200 ||
+          networkResponse.type !== 'basic'
+        ) {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'cors') {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
         }
 
-        return fetch(event.request).then(
-          (response) => {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              // If it's an external resource (like esm.sh), we might still want to cache it for offline usage
-              if (response && response.status === 200 && response.type === 'cors') {
-                 // Clone and cache external resources
-                 const responseToCache = response.clone();
-                 caches.open(CACHE_NAME)
-                   .then((cache) => {
-                     cache.put(event.request, responseToCache);
-                   });
-                 return response;
-              }
-              return response;
-            }
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(request, responseToCache);
+        });
 
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
-    );
+        return networkResponse;
+      });
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -64,6 +70,6 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });

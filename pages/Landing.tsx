@@ -39,11 +39,13 @@ export const Landing = () => {
       <section className="min-h-screen flex items-center justify-center sticky top-0 overflow-hidden py-20">
         <motion.div style={{ y: y1, opacity: opacity1 }} className="text-center z-10 px-4 w-full max-w-4xl mx-auto flex flex-col items-center">
           <p className="text-amber-500 font-mono text-sm tracking-[0.3em] mb-4">EST. 2024</p>
-          <h1 className="text-7xl md:text-9xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 mb-6">
-            Manee<span className="text-amber-500">&</span>Son
+          {/* Main Title - Adjusted for mobile fit */}
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-white via-neutral-200 to-neutral-500 mb-6 uppercase">
+            MANEE<span className="text-amber-500">&</span>SON LIMITED
           </h1>
-          <p className="text-2xl md:text-3xl text-neutral-300 font-light tracking-wide max-w-3xl mx-auto mb-20 leading-relaxed">
-            Generations of logic. Bespoke software architecture.
+          {/* Subtitle - Corporate Consultancy Services */}
+          <p className="text-xl md:text-2xl text-neutral-300 font-light tracking-wide max-w-3xl mx-auto mb-20 leading-relaxed capitalize">
+            corporate consultancy services
           </p>
           
           {/* Company Info - Frameless Design */}
@@ -78,12 +80,12 @@ export const Landing = () => {
                   <ArrowUpRight size={14} className="text-neutral-500 opacity-50 group-hover/btn:opacity-100 group-hover/btn:text-amber-500 transition-all" />
                 </a>
 
-                {/* Technical Footer - Floating */}
-                <div className="flex flex-col gap-1 items-center opacity-50 hover:opacity-80 transition-opacity duration-500 cursor-default">
-                   <div className="text-xs font-mono text-neutral-500 tracking-wider">
+                {/* Technical Footer - Enhanced Visibility */}
+                <div className="flex flex-col gap-2 items-center mt-4">
+                   <div className="text-sm md:text-base font-mono text-neutral-300 tracking-widest font-semibold border-b border-white/10 pb-1">
                       REG NO. 0105567249062
                    </div>
-                   <div className="text-xs font-mono text-neutral-500">
+                   <div className="text-xs md:text-sm font-mono text-neutral-400">
                       © MANEE & SON LIMITED 2024
                    </div>
                 </div>
@@ -107,7 +109,7 @@ export const Landing = () => {
             ].map((item, i) => (
               <div key={i} className="p-8 rounded-sm bg-neutral-900/40 backdrop-blur-md border border-white/5 hover:border-amber-500/30 transition-colors">
                 <h3 className="text-lg font-bold text-white mb-3 uppercase tracking-wider">{item.title}</h3>
-                <p className="text-neutral-500 text-sm leading-relaxed">{item.desc}</p>
+                <p className="text-neutral-300 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
