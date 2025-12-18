@@ -6,14 +6,14 @@ interface AddAppModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateApp: (url: string) => Promise<WebApp>;
-  onAddApp?: (app: WebApp) => void;
+  sessionId: string;
 }
 
 const AddAppModal: React.FC<AddAppModalProps> = ({
   isOpen,
   onClose,
   onCreateApp,
-  onAddApp,
+  sessionId,
 }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +35,6 @@ const AddAppModal: React.FC<AddAppModalProps> = ({
       setStep('complete');
 
       setTimeout(() => {
-        onAddApp?.(newApp);
         handleClose();
       }, 900);
     } catch (err) {
@@ -46,7 +45,7 @@ const AddAppModal: React.FC<AddAppModalProps> = ({
     }
   };
 
-  const handleClose = () => {
+  const handleClose = () => { // add data base
     setUrl('');
     setStep('idle');
     setIsLoading(false);

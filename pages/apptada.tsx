@@ -6,8 +6,11 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
+  doc,
   type DocumentData,
 } from 'firebase/firestore';
+import { v4 as uuidv4 } from 'uuid';
 
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebaseClient';
@@ -90,27 +93,39 @@ function mapDescriptionToWebApp(url: string, desc: AppDescription, id?: string, 
 export default function AppTadaPage() {
   const { user } = useAuth();
   const allowedEmails = useMemo(() => parseAllowedEmails(), []);
+  const [sessionId, setSessionId] = useState<string>('');
   const [apps, setApps] = useState<WebApp[]>([]);
-  const [guestApps, setGuestApps] = useState<WebApp[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const [appsError, setAppsError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  console.log('🔵 AppTadaPage mounted');
 
   const email = (user?.email || '').toLowerCase();
   const isAllowed = !!email && (allowedEmails.length === 0 || allowedEmails.includes(email));
   const canAccessApps = !!user && isAllowed;
 
+  // Generate or retrieve sessionId
+  useEffect(() => {
+    console.log('🟢 useEffect: Generating/retrieving sessionId');
+    let id = sessionStorage.getItem('appTadaSessionId');
+    if (!id) {
+      id = `session-${uuidv4()}`;
+      sessionStorage.setItem('appTadaSessionId', id);
+      console.log('✅ Generated new sessionId:', id);
+    } else {
+      console.log('✅ Using existing sessionId:', id);
+    }
+    console.log('📦 sessionStorage contents:', { ...sessionStorage });
+    setSessionId(id);
+  }, []);
+
   useEffect(() => {
     document.title = 'AppTada Store';
   }, []);
 
+  // Load apps from Firestore (both login + guest)
   useEffect(() => {
-    if (!canAccessApps) {
-      setApps([]);
-      setAppsLoading(false);
-      return;
-    }
-
     setAppsLoading(true);
     setAppsError(null);
 
@@ -141,7 +156,7 @@ export default function AppTadaPage() {
     );
 
     return () => unsub();
-  }, [canAccessApps]);
+  }, []);
 
   const handleCreateApp = async (url: string) => {
     const trimmed = url.trim();
@@ -161,25 +176,34 @@ export default function AppTadaPage() {
     const data = (await res.json()) as { description: AppDescription };
     if (!data?.description) throw new Error('Bad response from server');
 
-    if (canAccessApps) {
-      await addDoc(collection(db, 'apps'), {
-        url: trimmed,
-        description: data.description,
-        createdAt: serverTimestamp(),
-        createdBy: user?.email || 'unknown',
-      });
-    }
+    // Always write to Firestore (both login + guest)
+    await addDoc(collection(db, 'apps'), {
+      url: trimmed,
+      description: data.description,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      createdBy: user?.email || sessionId,
+      isGuest: !user, // true if guest, false if login
+    });
 
     return mapDescriptionToWebApp(trimmed, data.description);
   };
 
-  const handleAddApp = (app: WebApp) => {
-    if (canAccessApps) return;
-    setGuestApps((prev) => [app, ...prev]);
+  // Update app description (only owner can update)
+  const handleUpdateApp = async (appId: string, newDescription: AppDescription) => {
+    try {
+      const appRef = doc(db, 'apps', appId);
+      await updateDoc(appRef, {
+        description: newDescription,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Failed to update app:', err);
+      throw err;
+    }
   };
 
-  const displayApps = canAccessApps ? apps : guestApps;
-  const isGridLoading = canAccessApps && appsLoading;
+  const isGridLoading = appsLoading;
 
   return (
     <div className="min-h-screen relative text-white">
@@ -200,26 +224,20 @@ export default function AppTadaPage() {
             </div>
           </div>
 
-          {appsError && canAccessApps && (
+          {appsError && (
             <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
               {appsError}
             </div>
           )}
 
-          <AppGrid apps={displayApps} loading={isGridLoading} />
-
-          {!canAccessApps && (
-            <div className="mt-10 text-center text-sm text-gray-400">
-              Guest mode: login is required to save and load history.
-            </div>
-          )}
+          <AppGrid apps={apps} loading={isGridLoading} />
         </main>
 
         <AddAppModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onCreateApp={handleCreateApp}
-          onAddApp={handleAddApp}
+          sessionId={sessionId}
         />
       </div>
     </div>
