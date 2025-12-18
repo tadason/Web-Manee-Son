@@ -8,3 +8,10 @@ export interface WebApp {
   iconUrl: string;
   createdAt: number;
 }
+
+export interface GeneratedAppData {
+  name: string;
+  tagline: string;
+  description: string;
+  category: string;
+}

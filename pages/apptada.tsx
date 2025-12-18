@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   onSnapshot,
   orderBy,
   query,
@@ -17,6 +19,7 @@ import HeroSection from '../components/apptada/HeroSection';
 import AppGrid from '../components/apptada/AppGrid';
 import AddAppModal from '../components/apptada/AddAppModal';
 import type { WebApp } from '../components/apptada/types';
+import { analyzeWebAppUrl, generateAppIcon } from '../services/metadataService';
 
 type AppDescription = {
   appName: string;
@@ -32,8 +35,8 @@ type AppDescription = {
 function parseAllowedEmails(): string[] {
   const raw =
     import.meta.env.VITE_ALLOWED_EMAILS ||
-    import.meta.env.NEXT_PUBLIC_ALLOWED_EMAILS ||
-    '';
+    // @ts-ignore
+    import.meta.env.NEXT_PUBLIC_ALLOWED_EMAILS || '';
   return raw
     .split(',')
     .map((s) => s.trim().toLowerCase())
@@ -64,11 +67,17 @@ function buildIconUrl(url: string, name: string) {
   return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(name || 'App')}`;
 }
 
-function buildDescriptionText(desc: AppDescription) {
+function buildDescriptionText(desc?: Partial<AppDescription> & { description?: string }) {
+  if (!desc) return 'Web application';
+
+  if (typeof desc.description === 'string') {
+    return desc.description;
+  }
+
   if (Array.isArray(desc.keyFeatures) && desc.keyFeatures.length > 0) {
     return desc.keyFeatures.slice(0, 3).join(' • ');
   }
-  return desc.whyNow || desc.oneLiner;
+  return desc.whyNow || desc.oneLiner || 'Web application';
 }
 
 function mapDescriptionToWebApp(url: string, desc: AppDescription, id?: string, createdAt?: any): WebApp {
@@ -87,6 +96,31 @@ function mapDescriptionToWebApp(url: string, desc: AppDescription, id?: string, 
   };
 }
 
+function mapDocToWebApp(data: DocumentData, id: string): WebApp | null {
+  const url = data?.url;
+  if (!url) return null;
+
+  if (data?.description && typeof data.description === 'object' && !Array.isArray(data.description)) {
+    return mapDescriptionToWebApp(url, data.description as AppDescription, id, data.createdAt);
+  }
+
+  const name = data?.name || data?.description?.appName || 'Untitled';
+  const descriptionText = typeof data?.description === 'string' ? data.description : undefined;
+  const tagline = data?.tagline || descriptionText || 'Web application';
+  const category = data?.category || 'Web App';
+
+  return {
+    id,
+    url,
+    name,
+    tagline,
+    description: descriptionText || buildDescriptionText(),
+    category,
+    iconUrl: data?.iconUrl || buildIconUrl(url, name),
+    createdAt: normalizeCreatedAt(data?.createdAt),
+  };
+}
+
 export default function AppTadaPage() {
   const { user } = useAuth();
   const allowedEmails = useMemo(() => parseAllowedEmails(), []);
@@ -99,6 +133,20 @@ export default function AppTadaPage() {
   const email = (user?.email || '').toLowerCase();
   const isAllowed = !!email && (allowedEmails.length === 0 || allowedEmails.includes(email));
   const canAccessApps = !!user && isAllowed;
+
+  const buildFallbackApp = (url: string): WebApp => {
+    const name = safeHost(url) || 'Web Application';
+    return {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      url,
+      name,
+      tagline: 'แอปพลิเคชันเว็บ',
+      description: 'รายละเอียดกำลังจัดทำ',
+      category: 'General',
+      iconUrl: buildIconUrl(url, name),
+      createdAt: Date.now(),
+    };
+  };
 
   useEffect(() => {
     document.title = 'AppTada Store';
@@ -119,16 +167,7 @@ export default function AppTadaPage() {
       q,
       (snap) => {
         const rows = snap.docs
-          .map((d) => {
-            const data = d.data() as DocumentData;
-            if (!data?.description || !data?.url) return null;
-            return mapDescriptionToWebApp(
-              data.url,
-              data.description as AppDescription,
-              d.id,
-              data.createdAt
-            );
-          })
+          .map((d) => mapDocToWebApp(d.data() as DocumentData, d.id))
           .filter(Boolean) as WebApp[];
 
         setApps(rows);
@@ -147,30 +186,61 @@ export default function AppTadaPage() {
     const trimmed = url.trim();
     if (!trimmed) throw new Error('URL required');
 
-    const res = await fetch('/api/describe-app', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: trimmed }),
-    });
+    let appData = buildFallbackApp(trimmed);
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || `HTTP ${res.status}`);
+    try {
+      const aiData = await analyzeWebAppUrl(trimmed);
+      appData = {
+        ...appData,
+        name: aiData.name,
+        tagline: aiData.tagline,
+        description: aiData.description,
+        category: aiData.category,
+      };
+    } catch (err) {
+      console.error('Metadata analyze failed, using fallback', err);
     }
 
-    const data = (await res.json()) as { description: AppDescription };
-    if (!data?.description) throw new Error('Bad response from server');
+    let iconUrl = appData.iconUrl;
+    try {
+      iconUrl = await generateAppIcon(appData.name, appData.description);
+    } catch (err) {
+      console.error('Icon generation failed, using fallback favicon', err);
+      iconUrl = buildIconUrl(trimmed, appData.name);
+    }
+
+    const newApp: WebApp = {
+      ...appData,
+      iconUrl,
+    };
 
     if (canAccessApps) {
-      await addDoc(collection(db, 'apps'), {
-        url: trimmed,
-        description: data.description,
-        createdAt: serverTimestamp(),
-        createdBy: user?.email || 'unknown',
-      });
+      const { id: _id, createdAt: _createdAt, ...payload } = newApp;
+      try {
+        const ref = await addDoc(collection(db, 'apps'), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          createdBy: user?.email || 'unknown',
+        });
+        newApp.id = ref.id;
+      } catch (err: any) {
+        console.error('Firestore add failed', err);
+        setAppsError(err?.message || 'Failed to save to Firestore');
+        throw err;
+      }
     }
 
-    return mapDescriptionToWebApp(trimmed, data.description);
+    return newApp;
+  };
+
+  const handleDeleteApp = async (id: string) => {
+    if (!canAccessApps) return;
+    try {
+      setApps((prev) => prev.filter((a) => a.id !== id));
+      await deleteDoc(doc(db, 'apps', id));
+    } catch (err: any) {
+      setAppsError(err?.message || 'Failed to delete app');
+    }
   };
 
   const handleAddApp = (app: WebApp) => {
@@ -206,7 +276,7 @@ export default function AppTadaPage() {
             </div>
           )}
 
-          <AppGrid apps={displayApps} loading={isGridLoading} />
+          <AppGrid apps={displayApps} loading={isGridLoading} onDeleteApp={canAccessApps ? handleDeleteApp : undefined} />
 
           {!canAccessApps && (
             <div className="mt-10 text-center text-sm text-gray-400">

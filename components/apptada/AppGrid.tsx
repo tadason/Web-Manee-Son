@@ -6,9 +6,10 @@ import { WebApp } from './types';
 interface AppGridProps {
   apps: WebApp[];
   loading: boolean;
+  onDeleteApp?: (id: string) => void;
 }
 
-const AppGrid: React.FC<AppGridProps> = ({ apps, loading }) => {
+const AppGrid: React.FC<AppGridProps> = ({ apps, loading, onDeleteApp }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 py-8">
@@ -49,7 +50,7 @@ const AppGrid: React.FC<AppGridProps> = ({ apps, loading }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 py-8">
       {apps.map((app) => (
-        <AppCard key={app.id} app={app} />
+        <AppCard key={app.id} app={app} onDelete={onDeleteApp} />
       ))}
     </div>
   );

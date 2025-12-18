@@ -1,12 +1,13 @@
 import React from 'react';
-import { ArrowUpRight, Share2 } from 'lucide-react';
+import { ArrowUpRight, Share2, Trash2 } from 'lucide-react';
 import { WebApp } from './types';
 
 interface AppCardProps {
   app: WebApp;
+  onDelete?: (id: string) => void;
 }
 
-const AppCard: React.FC<AppCardProps> = ({ app }) => {
+const AppCard: React.FC<AppCardProps> = ({ app, onDelete }) => {
   return (
     <div className="group relative bg-[#151725]/60 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/5 hover:border-cyan-500/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_10px_40px_-10px_rgba(0,240,255,0.2)] flex flex-col h-full overflow-hidden">
       <div className="absolute -inset-1 bg-gradient-to-r from-cyan-600 to-purple-600 rounded-3xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500"></div>
@@ -24,6 +25,15 @@ const AppCard: React.FC<AppCardProps> = ({ app }) => {
             <button className="p-2.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-white/5">
               <Share2 size={18} />
             </button>
+            {onDelete && (
+              <button
+                onClick={() => onDelete(app.id)}
+                className="p-2.5 text-gray-500 hover:text-white hover:bg-red-500/10 rounded-xl transition-all border border-transparent hover:border-red-500/40"
+                title="ลบออกจาก Firestore"
+              >
+                <Trash2 size={18} />
+              </button>
+            )}
           </div>
         </div>
 
