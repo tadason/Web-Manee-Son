@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { MapPin, ArrowUpRight } from 'lucide-react';
 import { UserRole } from '../types';
+import { ThreeBackground } from '../components/ThreeBackground';
 
 export const Landing = () => {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -41,6 +42,7 @@ export const Landing = () => {
 
   return (
     <div className="relative w-full min-h-[200vh] text-white selection:bg-amber-500/30">
+      <ThreeBackground />
       {/* Login Orb */}
       <motion.button
         whileHover={{ scale: 1.1 }}

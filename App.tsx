@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ThreeBackground } from './components/ThreeBackground';
 import { InvisibleNav } from './components/InvisibleNav';
 import { InstallPrompt } from './components/InstallPrompt';
 import { Landing } from './pages/Landing';
@@ -44,11 +43,9 @@ const ProtectedRoute: React.FC<{
 
 const AppShell = () => {
   const location = useLocation();
-  const hideBackground = location.pathname.startsWith('/apptada');
 
   return (
     <div className="relative z-10 min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-cyan-500/30">
-      {!hideBackground && <ThreeBackground />}
       <InvisibleNav />
       <InstallPrompt />
       
