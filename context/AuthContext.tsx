@@ -4,6 +4,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   getIdTokenResult,
+  setPersistence,
+  inMemoryPersistence,
 } from 'firebase/auth';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../firebaseClient';
@@ -51,50 +53,62 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (firebaseUser) => {
-        if (!firebaseUser) {
+    let unsubscribe = () => {};
+
+    const initAuth = async () => {
+      try {
+        await setPersistence(auth, inMemoryPersistence);
+      } catch (error) {
+        console.warn('Failed to set auth persistence.', error);
+      }
+
+      unsubscribe = onAuthStateChanged(
+        auth,
+        (firebaseUser) => {
+          if (!firebaseUser) {
+            setUser(null);
+            setAuthLoading(false);
+            return;
+          }
+
+          const hydrateUser = async () => {
+            try {
+              const role = await resolveRole(firebaseUser);
+              const displayName =
+                firebaseUser.displayName ||
+                firebaseUser.email?.split('@')[0] ||
+                'User';
+              const avatar =
+                firebaseUser.photoURL ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0f172a&color=ffffff`;
+
+              setUser({
+                id: firebaseUser.uid,
+                name: displayName,
+                role,
+                avatar,
+                email: firebaseUser.email || undefined,
+              });
+              setAuthError(null);
+            } catch (error: any) {
+              setAuthError(error?.message || 'Authentication failed.');
+              setUser(null);
+            } finally {
+              setAuthLoading(false);
+            }
+          };
+
+          hydrateUser();
+        },
+        (error) => {
+          setAuthError(formatAuthError(error));
           setUser(null);
           setAuthLoading(false);
-          return;
         }
+      );
+    };
 
-        const hydrateUser = async () => {
-          try {
-            const role = await resolveRole(firebaseUser);
-            const displayName =
-              firebaseUser.displayName ||
-              firebaseUser.email?.split('@')[0] ||
-              'User';
-            const avatar =
-              firebaseUser.photoURL ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0f172a&color=ffffff`;
-
-            setUser({
-              id: firebaseUser.uid,
-              name: displayName,
-              role,
-              avatar,
-              email: firebaseUser.email || undefined,
-            });
-            setAuthError(null);
-          } catch (error: any) {
-            setAuthError(error?.message || 'Authentication failed.');
-            setUser(null);
-          } finally {
-            setAuthLoading(false);
-          }
-        };
-
-        hydrateUser();
-      },
-      (error) => {
-        setAuthError(formatAuthError(error));
-        setUser(null);
-        setAuthLoading(false);
-      }
-    );
+    initAuth();
 
     return () => unsubscribe();
   }, [adminEmailSet]);

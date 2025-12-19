@@ -47,8 +47,22 @@ const AppShell = () => {
       
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/apptada.tsx" element={<AppTadaPage />} />
-        <Route path="/apptada" element={<AppTadaPage />} />
+        <Route
+          path="/apptada.tsx"
+          element={
+            <ProtectedRoute>
+              <AppTadaPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/apptada"
+          element={
+            <ProtectedRoute>
+              <AppTadaPage />
+            </ProtectedRoute>
+          }
+        />
         
         <Route 
           path="/dashboard" 
