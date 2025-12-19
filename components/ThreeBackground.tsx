@@ -105,8 +105,9 @@ export const ThreeBackground = () => {
   return (
     <div className="fixed inset-0 z-0 w-screen h-screen bg-neutral-950 pointer-events-none overflow-hidden">
       <Canvas 
-        dpr={window.devicePixelRatio} 
+        dpr={[1, 1.5]}
         className="w-full h-full" 
+        gl={{ antialias: false, powerPreference: 'low-power' }}
         camera={{ position: [0, 5, 30], fov: 75 }}
       >
         <ambientLight intensity={0.5} />

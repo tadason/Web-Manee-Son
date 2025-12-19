@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles, Search, Plus } from 'lucide-react';
 
 interface NavbarProps {
   onOpenModal: () => void;
   userAvatar?: string;
+  onLogout?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onOpenModal, userAvatar }) => {
+const Navbar: React.FC<NavbarProps> = ({ onOpenModal, userAvatar, onLogout }) => {
   const avatarUrl =
     userAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=AppTada';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0C15]/70 backdrop-blur-xl">
@@ -45,14 +60,38 @@ const Navbar: React.FC<NavbarProps> = ({ onOpenModal, userAvatar }) => {
               <Plus size={22} className="group-hover:rotate-90 transition-transform duration-300" />
             </button>
 
-            <div className="h-10 w-10 rounded-full p-[2px] bg-gradient-to-tr from-cyan-500 to-purple-600">
-              <div className="h-full w-full rounded-full overflow-hidden bg-black">
-                <img
-                  src={avatarUrl}
-                  alt="User"
-                  className="opacity-90 hover:opacity-100 transition-opacity"
-                />
-              </div>
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                className="h-10 w-10 rounded-full p-[2px] bg-gradient-to-tr from-cyan-500 to-purple-600"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                title="Profile"
+              >
+                <div className="h-full w-full rounded-full overflow-hidden bg-black">
+                  <img
+                    src={avatarUrl}
+                    alt="User"
+                    className="opacity-90 hover:opacity-100 transition-opacity"
+                  />
+                </div>
+              </button>
+
+              {menuOpen && onLogout && (
+                <div className="absolute right-0 mt-3 w-40 rounded-xl border border-white/10 bg-neutral-900/95 backdrop-blur-xl shadow-xl py-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onLogout();
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-neutral-200 hover:bg-white/5 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

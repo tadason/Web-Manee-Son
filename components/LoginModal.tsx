@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Mail, Lock, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { InstallPrompt } from './InstallPrompt';
 import { useNavigate } from 'react-router-dom';
 
 interface LoginModalProps {
@@ -97,9 +98,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirec
                     {errorMessage}
                   </div>
                 )}
-                <div className="flex items-center justify-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-amber-200">
+                <div className="flex items-center justify-center gap-3 rounded-full border border-amber-500/20 bg-amber-500/5 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-amber-200">
                   <ShieldCheck size={14} />
                   Email & Password
+                  <InstallPrompt variant="inline" label="ติดตั้งในเครื่อง" />
                 </div>
 
                 {/* Email / Password Form */}
@@ -154,6 +156,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirec
               </div>
             </div>
           </motion.div>
+          <InstallPrompt />
         </div>
       )}
     </AnimatePresence>
