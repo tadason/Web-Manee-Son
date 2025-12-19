@@ -16,6 +16,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  const formatAuthError = (error: any) => {
+    const code = error?.code ? String(error.code) : '';
+    const message = error?.message || 'Authentication failed.';
+    return code ? `${code}: ${message}` : message;
+  };
+
   const adminEmailSet = useMemo(() => {
     const raw = import.meta.env.VITE_ADMIN_EMAILS || '';
     return new Set(
@@ -84,7 +90,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         hydrateUser();
       },
       (error) => {
-        setAuthError(error?.message || 'Authentication failed.');
+        setAuthError(formatAuthError(error));
         setUser(null);
         setAuthLoading(false);
       }
@@ -98,7 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
-      setAuthError(error?.message || 'Unable to sign in.');
+      setAuthError(formatAuthError(error));
       throw error;
     }
   };
