@@ -22,6 +22,13 @@ const AddAppModal: React.FC<AddAppModalProps> = ({
 
   if (!isOpen) return null;
 
+  const normalizeUrl = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
@@ -31,7 +38,16 @@ const AddAppModal: React.FC<AddAppModalProps> = ({
     setError(null);
 
     try {
-      const newApp = await onCreateApp(url);
+      const normalizedUrl = normalizeUrl(url);
+      try {
+        new URL(normalizedUrl);
+      } catch {
+        setError('URL ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+        setIsLoading(false);
+        setStep('idle');
+        return;
+      }
+      const newApp = await onCreateApp(normalizedUrl);
       setStep('complete');
 
       setTimeout(() => {
@@ -83,8 +99,8 @@ const AddAppModal: React.FC<AddAppModalProps> = ({
                     <Globe className="text-gray-500 group-focus-within:text-cyan-400 transition-colors" size={18} />
                   </div>
                   <input
-                    type="url"
-                    placeholder="https://example.com"
+                    type="text"
+                    placeholder="www.example.com"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     required

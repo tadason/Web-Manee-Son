@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { InvisibleNav } from './components/InvisibleNav';
 import { Landing } from './pages/Landing';
 import { EmployeeDashboard } from './pages/EmployeeDashboard';
 import { AdminPortal } from './pages/AdminPortal';
@@ -45,7 +44,6 @@ const AppShell = () => {
 
   return (
       <div className="relative z-10 min-h-screen text-white font-sans antialiased overflow-x-hidden selection:bg-cyan-500/30">
-        <InvisibleNav />
       
       <Routes>
         <Route path="/" element={<Landing />} />
