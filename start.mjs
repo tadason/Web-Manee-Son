@@ -60,15 +60,27 @@ app.post('/api/describe-app', async (req, res) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  console.log('✅ Health check called');
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Serve static files (React frontend from dist/)
 const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+console.log(`📂 Looking for static files in: ${distPath}`);
+
+// Check if dist exists
+import { statSync } from 'fs';
+try {
+  statSync(distPath);
+  console.log(`✅ dist/ folder found`);
+} catch (err) {
+  console.warn(`⚠️ dist/ folder not found at ${distPath}, creating fallback...`);
+}
+
+app.use(express.static(distPath, { index: 'index.html' }));
 
 // SPA fallback - serve index.html for all unmatched routes
-app.get('*', (req, res) => {
+app.get(/^\/?(?!api\/).*$/, (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
