@@ -61,6 +61,9 @@ const normalizeCreatedAt = (value: any): number => {
   return Date.now();
 };
 
+const buildScreenshotUrl = (url: string): string =>
+  `https://s.wordpress.com/mshots/v1/${encodeURIComponent(url)}?w=1200`;
+
 const formatDate = (value: number): string => {
   try {
     return new Date(value).toLocaleDateString('en-US', {
@@ -76,7 +79,7 @@ const formatDate = (value: number): string => {
 const buildIconUrl = (url: string, name: string): string => {
   const host = safeHost(url);
   if (host) {
-    return `https://www.google.com/s2/favicons?domain=${host}&sz=128`;
+    return `https://icon.horse/icon/${host}`;
   }
   return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(name || 'App')}`;
 };
@@ -110,7 +113,14 @@ const mapDocToWebApp = (data: DocumentData, id: string): WebApp | null => {
   if (!url) return null;
 
   if (data?.description && typeof data.description === 'object' && !Array.isArray(data.description)) {
-    return mapDescriptionToWebApp(url, data.description as AppDescription, id, data.createdAt);
+    const base = mapDescriptionToWebApp(url, data.description as AppDescription, id, data.createdAt);
+    return {
+      ...base,
+      ogTitle: data?.ogTitle,
+      ogDescription: data?.ogDescription,
+      ogImage: data?.ogImage,
+      screenshotUrl: data?.screenshotUrl,
+    };
   }
 
   const name = data?.name || data?.description?.appName || 'Untitled';
@@ -125,6 +135,10 @@ const mapDocToWebApp = (data: DocumentData, id: string): WebApp | null => {
     category: data?.category || 'Web App',
     iconUrl: data?.iconUrl || buildIconUrl(url, name),
     createdAt: normalizeCreatedAt(data?.createdAt),
+    ogTitle: data?.ogTitle,
+    ogDescription: data?.ogDescription,
+    ogImage: data?.ogImage,
+    screenshotUrl: data?.screenshotUrl,
   };
 };
 
@@ -139,6 +153,7 @@ const buildFallbackApp = (url: string): WebApp => {
     category: 'General',
     iconUrl: buildIconUrl(url, name),
     createdAt: Date.now(),
+    screenshotUrl: buildScreenshotUrl(url),
   };
 };
 
@@ -197,9 +212,29 @@ export default function AppTadaPage() {
     const trimmed = url.trim();
     if (!trimmed) throw new Error('URL required');
 
+    let metadata: { title?: string; description?: string; image?: string; siteName?: string } | null = null;
+    try {
+      const response = await fetch(`/api/og-metadata?url=${encodeURIComponent(trimmed)}`);
+      if (response.ok) {
+        metadata = await response.json();
+      }
+    } catch (err) {
+      console.warn('Failed to load OG metadata', err);
+    }
+
+    const derivedName = metadata?.title || safeHost(trimmed) || 'Web Application';
+    const derivedDescription = metadata?.description || 'รายละเอียดกำลังจัดทำ';
+
     const newApp: WebApp = {
       ...buildFallbackApp(trimmed),
-      iconUrl: buildIconUrl(trimmed, safeHost(trimmed) || 'Web Application'),
+      name: derivedName,
+      tagline: metadata?.siteName || 'Web application',
+      description: derivedDescription,
+      iconUrl: buildIconUrl(trimmed, derivedName),
+      ogTitle: metadata?.title,
+      ogDescription: metadata?.description,
+      ogImage: metadata?.image,
+      screenshotUrl: buildScreenshotUrl(trimmed),
     };
 
     if (!canAccessApps) return newApp;
@@ -251,6 +286,9 @@ export default function AppTadaPage() {
     }
   };
 
+  const buildPreviewImage = (app: WebApp) =>
+    app.ogImage || app.screenshotUrl || buildScreenshotUrl(app.url);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -294,6 +332,17 @@ export default function AppTadaPage() {
                     className="min-w-[85%] sm:min-w-[70%] md:min-w-[55%] lg:min-w-[45%] snap-start block group relative overflow-hidden rounded-[2rem] h-56 p-8 flex flex-col justify-center text-white shadow-lg shadow-amber-500/10 transition-transform hover:scale-[1.01]"
                     style={{ background: FEATURED_BG }}
                   >
+                    {buildPreviewImage(app) && (
+                      <div className="absolute inset-0 opacity-40">
+                        <img
+                          src={buildPreviewImage(app)}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/20 to-black/70" />
+                      </div>
+                    )}
                     <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-90 hidden md:block">
                       <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M50 15L85 85H15L50 15Z" stroke="#FDE68A" strokeWidth="8" strokeLinejoin="round" />
@@ -301,9 +350,9 @@ export default function AppTadaPage() {
                     </div>
 
                     <div className="relative z-10 max-w-[70%]">
-                      <h3 className="text-3xl font-extrabold mb-3 tracking-tight">{app.name}</h3>
+                      <h3 className="text-3xl font-extrabold mb-3 tracking-tight">{app.ogTitle || app.name}</h3>
                       <p className="text-white/90 text-base font-medium leading-relaxed line-clamp-3">
-                        {app.tagline || app.description}
+                        {app.ogDescription || app.tagline || app.description}
                       </p>
                       <div className="mt-4 text-xs text-white/70 font-semibold uppercase tracking-widest">
                         {safeHost(app.url)} • {app.category}
@@ -339,6 +388,11 @@ export default function AppTadaPage() {
                         className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-gray-50"
                         onError={(e) => {
                           const target = e.currentTarget;
+                          if (target.dataset.fallback !== '1') {
+                            target.dataset.fallback = '1';
+                            target.src = buildIconUrl(app.url, app.name);
+                            return;
+                          }
                           target.onerror = null;
                           target.src = buildIconUrl('', app.name);
                         }}
@@ -347,7 +401,7 @@ export default function AppTadaPage() {
 
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex justify-between items-start">
-                        <h3 className="text-xl font-bold text-slate-900 truncate pr-4">{app.name}</h3>
+                        <h3 className="text-xl font-bold text-slate-900 truncate pr-4">{app.ogTitle || app.name}</h3>
                         <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-400 bg-gray-50 px-3 py-1 rounded-full">
                           <span>{safeHost(app.url) || 'web app'}</span>
                           <span>•</span>
@@ -356,11 +410,31 @@ export default function AppTadaPage() {
                       </div>
 
                       <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mt-2">
-                        {app.tagline || app.description}
+                        {app.ogDescription || app.tagline || app.description}
                       </p>
                       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                         <span className="px-2 py-1 rounded-full bg-slate-100">{app.category}</span>
                         <span className="px-2 py-1 rounded-full bg-slate-100">{safeHost(app.url)}</span>
+                      </div>
+                    </div>
+                    <div className="hidden md:block w-48 h-28 shrink-0">
+                      <div className="relative w-full h-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50">
+                        <img
+                          src={buildPreviewImage(app)}
+                          alt={`${app.name} preview`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (target.dataset.fallback !== '1') {
+                              target.dataset.fallback = '1';
+                              target.src = buildScreenshotUrl(app.url);
+                              return;
+                            }
+                            target.onerror = null;
+                            target.src = '';
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

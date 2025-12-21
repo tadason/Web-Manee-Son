@@ -7,4 +7,8 @@ export interface WebApp {
   category: string;
   iconUrl: string;
   createdAt: number;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  screenshotUrl?: string;
 }

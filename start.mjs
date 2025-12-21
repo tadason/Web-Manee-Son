@@ -18,6 +18,37 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
+const extractMetaTags = (html) => {
+  const tags = [];
+  const metaRegex = /<meta\s+[^>]*>/gi;
+  const attrRegex = /(\w+)=["']([^"']*)["']/gi;
+  let match;
+
+  while ((match = metaRegex.exec(html))) {
+    const tag = match[0];
+    const attrs = {};
+    let attrMatch;
+    while ((attrMatch = attrRegex.exec(tag))) {
+      attrs[attrMatch[1].toLowerCase()] = attrMatch[2];
+    }
+    tags.push(attrs);
+  }
+
+  return tags;
+};
+
+const pickMetaContent = (tags, keys) => {
+  for (const key of keys) {
+    const found = tags.find(
+      (tag) =>
+        (tag.property && tag.property.toLowerCase() === key) ||
+        (tag.name && tag.name.toLowerCase() === key)
+    );
+    if (found && found.content) return found.content.trim();
+  }
+  return '';
+};
+
 // API Routes - dummy route that will be replaced by real handler
 app.post('/api/describe-app', async (req, res) => {
   try {
@@ -54,6 +85,74 @@ app.post('/api/describe-app', async (req, res) => {
     res.status(500).json({
       error: 'Failed to describe app',
       details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+app.get('/api/og-metadata', async (req, res) => {
+  const url = req.query.url;
+  if (!url || typeof url !== 'string') {
+    res.status(400).json({ error: 'URL is required' });
+    return;
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch (err) {
+    res.status(400).json({ error: 'Invalid URL format' });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+  try {
+    const response = await fetch(parsedUrl.toString(), {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; ManeeSonBot/1.0)',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('text/html')) {
+      res.status(200).json({
+        title: parsedUrl.hostname,
+        description: '',
+        image: '',
+        siteName: parsedUrl.hostname,
+      });
+      return;
+    }
+
+    const html = await response.text();
+    const tags = extractMetaTags(html);
+    const titleTagMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+    const titleTag = titleTagMatch ? titleTagMatch[1].trim() : '';
+
+    const title = pickMetaContent(tags, ['og:title', 'twitter:title']) || titleTag || parsedUrl.hostname;
+    const description =
+      pickMetaContent(tags, ['og:description', 'twitter:description', 'description']) || '';
+    const image = pickMetaContent(tags, ['og:image', 'twitter:image']) || '';
+    const siteName = pickMetaContent(tags, ['og:site_name']) || parsedUrl.hostname;
+
+    res.status(200).json({
+      title,
+      description,
+      image,
+      siteName,
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+    res.status(200).json({
+      title: parsedUrl.hostname,
+      description: '',
+      image: '',
+      siteName: parsedUrl.hostname,
     });
   }
 });

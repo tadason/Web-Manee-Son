@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -102,6 +102,17 @@ const DigitalWave = () => {
 };
 
 export const ThreeBackground = () => {
+  const [webglFailed, setWebglFailed] = useState(false);
+
+  if (webglFailed) {
+    return (
+      <div className="fixed inset-0 z-0 w-screen h-screen pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a] via-[#111827] to-[#1f2937]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#f59e0b22,transparent_55%)]" />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-0 w-screen h-screen bg-neutral-950 pointer-events-none overflow-hidden">
       <Canvas 
@@ -109,6 +120,13 @@ export const ThreeBackground = () => {
         className="w-full h-full" 
         gl={{ antialias: false, powerPreference: 'low-power' }}
         camera={{ position: [0, 5, 30], fov: 75 }}
+        onCreated={({ gl }) => {
+          const handleContextLost = (event: Event) => {
+            event.preventDefault();
+            setWebglFailed(true);
+          };
+          gl.domElement.addEventListener('webglcontextlost', handleContextLost, { once: true });
+        }}
       >
         <ambientLight intensity={0.5} />
         {/* Soft, studio-like lighting */}
