@@ -31,14 +31,6 @@ type AppDescription = {
 
 const FEATURED_BG = 'linear-gradient(135deg, #1a5f72 0%, #2b8a9e 40%, #e88a4d 100%)';
 
-const renderStars = () => (
-  <div className="flex text-amber-400 text-sm gap-0.5 my-1">
-    {'★★★★★'.split('').map((star, i) => (
-      <span key={i}>{star}</span>
-    ))}
-  </div>
-);
-
 const parseAllowedEmails = (): Set<string> => {
   const raw =
     import.meta.env.VITE_ALLOWED_EMAILS ||
@@ -67,6 +59,18 @@ const normalizeCreatedAt = (value: any): number => {
   if (typeof value?.toMillis === 'function') return value.toMillis();
   if (typeof value?.seconds === 'number') return value.seconds * 1000;
   return Date.now();
+};
+
+const formatDate = (value: number): string => {
+  try {
+    return new Date(value).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return '—';
+  }
 };
 
 const buildIconUrl = (url: string, name: string): string => {
@@ -147,11 +151,12 @@ export default function AppTadaPage() {
   const [appsLoading, setAppsLoading] = useState(false);
   const [appsError, setAppsError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<{ id: string; message: string } | null>(null);
 
   const email = (user?.email || '').toLowerCase();
   const canAccessApps = !!user && (allowedEmails.size === 0 || allowedEmails.has(email));
   const displayApps = canAccessApps ? apps : guestApps;
-  const featuredApp = displayApps[0] || null;
+  const featuredApps = displayApps.slice(0, 6);
   const listedApps = displayApps.length > 1 ? displayApps.slice(1) : [];
 
   useEffect(() => {
@@ -232,6 +237,20 @@ export default function AppTadaPage() {
     setGuestApps((prev) => [app, ...prev]);
   };
 
+  const handleCopyLink = async (appId: string, url: string) => {
+    try {
+      if (!navigator.clipboard) {
+        throw new Error('Clipboard not available');
+      }
+      await navigator.clipboard.writeText(url);
+      setCopyStatus({ id: appId, message: 'Link copied' });
+      window.setTimeout(() => setCopyStatus(null), 1800);
+    } catch {
+      setCopyStatus({ id: appId, message: 'Copy failed' });
+      window.setTimeout(() => setCopyStatus(null), 1800);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -256,40 +275,45 @@ export default function AppTadaPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3">
               <span className="w-1 h-6 bg-gradient-to-b from-amber-300 to-amber-500 rounded-full shadow-sm"></span>
-              Trending Apps
+              App Store
             </h2>
-            <div className="text-sm text-amber-600 cursor-pointer hover:text-amber-700 font-medium tracking-wide transition-colors">
-              VIEW ALL
+            <div className="text-xs text-slate-400 font-semibold tracking-wide uppercase">
+              {displayApps.length} Apps
             </div>
           </div>
 
-          {featuredApp ? (
+          {featuredApps.length > 0 ? (
             <div className="mb-10 relative">
-              <a
-                href={featuredApp.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block group relative overflow-hidden rounded-[2rem] h-56 p-8 flex flex-col justify-center text-white shadow-lg shadow-amber-500/10 transition-transform hover:scale-[1.01]"
-                style={{ background: FEATURED_BG }}
-              >
-                <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-90 hidden md:block">
-                  <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M50 15L85 85H15L50 15Z" stroke="#FDE68A" strokeWidth="8" strokeLinejoin="round" />
-                  </svg>
-                </div>
+              <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth">
+                {featuredApps.map((app) => (
+                  <a
+                    key={app.id}
+                    href={app.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-w-[85%] sm:min-w-[70%] md:min-w-[55%] lg:min-w-[45%] snap-start block group relative overflow-hidden rounded-[2rem] h-56 p-8 flex flex-col justify-center text-white shadow-lg shadow-amber-500/10 transition-transform hover:scale-[1.01]"
+                    style={{ background: FEATURED_BG }}
+                  >
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-90 hidden md:block">
+                      <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 15L85 85H15L50 15Z" stroke="#FDE68A" strokeWidth="8" strokeLinejoin="round" />
+                      </svg>
+                    </div>
 
-                <div className="relative z-10 max-w-[70%]">
-                  <h3 className="text-3xl font-extrabold mb-3 tracking-tight">{featuredApp.name}</h3>
-                  <p className="text-white/90 text-base font-medium leading-relaxed line-clamp-3">
-                    {featuredApp.tagline || featuredApp.description}
-                  </p>
-                </div>
-              </a>
-              <div className="flex justify-center gap-2 mt-6">
-                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-                <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-                <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                    <div className="relative z-10 max-w-[70%]">
+                      <h3 className="text-3xl font-extrabold mb-3 tracking-tight">{app.name}</h3>
+                      <p className="text-white/90 text-base font-medium leading-relaxed line-clamp-3">
+                        {app.tagline || app.description}
+                      </p>
+                      <div className="mt-4 text-xs text-white/70 font-semibold uppercase tracking-widest">
+                        {safeHost(app.url)} • {app.category}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+              <div className="mt-3 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                Scroll horizontally
               </div>
             </div>
           ) : appsLoading ? (
@@ -324,58 +348,42 @@ export default function AppTadaPage() {
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex justify-between items-start">
                         <h3 className="text-xl font-bold text-slate-900 truncate pr-4">{app.name}</h3>
-                        <div className="hidden sm:flex items-center gap-1 text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-full">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-                            <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
-                            <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
-                          </svg>
-                          <span>{(Math.random() * 10).toFixed(1)}k Reads</span>
+                        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-400 bg-gray-50 px-3 py-1 rounded-full">
+                          <span>{safeHost(app.url) || 'web app'}</span>
+                          <span>•</span>
+                          <span>{formatDate(app.createdAt)}</span>
                         </div>
                       </div>
-
-                      {renderStars()}
 
                       <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mt-2">
                         {app.tagline || app.description}
                       </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span className="px-2 py-1 rounded-full bg-slate-100">{app.category}</span>
+                        <span className="px-2 py-1 rounded-full bg-slate-100">{safeHost(app.url)}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-6 sm:ml-24">
+                  <div className="flex flex-wrap items-center gap-3 mt-6 sm:ml-24">
                     <a
                       href={app.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 sm:flex-none bg-gradient-to-b from-amber-300 to-amber-500 text-slate-900 font-extrabold text-sm py-2.5 px-8 rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-amber-200 hover:shadow-md hover:from-amber-400 hover:to-amber-600 transition-all active:scale-95"
                     >
-                      Install
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 opacity-80">
-                        <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
-                        <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
-                      </svg>
+                      Open App
                     </a>
 
-                    <div className="hidden sm:flex items-center gap-3 ml-4">
-                      <div className="w-6 h-6 rounded bg-gray-100 text-gray-400 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                          <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M.664 10.59a1.651 1.651 0 010-1.186A10.004 10.004 0 0110 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0110 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                      <div className="w-6 h-6 rounded bg-gray-100 text-gray-400 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                          <path
-                            fillRule="evenodd"
-                            d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm2 1v12h12V4H4zm2 2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H7a1 1 0 01-1-1V6zm6 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V6zM6 10a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H7a1 1 0 01-1-1v-2zm6 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => handleCopyLink(app.id, app.url)}
+                      className="flex-1 sm:flex-none border border-slate-200 text-slate-600 text-sm font-semibold px-6 py-2.5 rounded-xl hover:border-slate-300 hover:text-slate-800 transition-colors"
+                    >
+                      Copy Link
+                    </button>
+                    {copyStatus?.id === app.id && (
+                      <div className="text-xs text-slate-400 font-semibold">{copyStatus.message}</div>
+                    )}
 
                     {canAccessApps && (
                       <button
@@ -407,48 +415,6 @@ export default function AppTadaPage() {
             </div>
           )}
         </main>
-
-        <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 px-6 pt-2 pb-1 z-50 md:hidden">
-          <div className="flex justify-between items-end text-[10px] font-bold text-gray-400">
-            <div className="flex flex-col items-center gap-1 text-amber-500 relative">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
-                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-              </svg>
-              <span>Home</span>
-              <span className="w-4 h-1 bg-amber-500 rounded-t-full mt-1"></span>
-            </div>
-            <div className="flex flex-col items-center gap-1 hover:text-slate-900 transition-colors pb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
-                <path
-                  fillRule="evenodd"
-                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Search</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 hover:text-slate-900 transition-colors pb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
-                <path
-                  fillRule="evenodd"
-                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Explore</span>
-            </div>
-            <div className="flex flex-col items-center gap-1 hover:text-slate-900 transition-colors pb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
-                <path
-                  fillRule="evenodd"
-                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Account</span>
-            </div>
-          </div>
-        </div>
 
         <AddAppModal
           isOpen={isModalOpen}
