@@ -288,8 +288,8 @@ export default function AppTadaPage() {
   };
 
   return (
-    <div className="min-h-screen relative bg-gray-50 text-slate-900 font-sans pb-24">
-      <div className="relative z-10 max-w-md mx-auto md:max-w-7xl">
+    <div className="min-h-[100svh] relative bg-gray-50 text-slate-900 font-sans pb-24">
+      <div className="relative z-10 w-full max-w-none sm:max-w-7xl mx-auto">
         <Navbar
           onOpenModal={() => setIsModalOpen(true)}
           userAvatar={user?.avatar}
@@ -322,18 +322,18 @@ export default function AppTadaPage() {
                     href={app.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="min-w-[85%] sm:min-w-[70%] md:min-w-[55%] lg:min-w-[45%] snap-start block group relative overflow-hidden rounded-[2rem] h-56 p-8 flex flex-col justify-center text-white shadow-lg shadow-amber-500/10 transition-transform hover:scale-[1.01]"
+                    className="min-w-[68%] sm:min-w-[56%] md:min-w-[44%] lg:min-w-[36%] snap-start block group relative overflow-hidden rounded-[2rem] aspect-[4/3] p-8 flex flex-col justify-end text-white shadow-lg shadow-amber-500/10 transition-transform hover:scale-[1.01]"
                     style={{ background: FEATURED_BG }}
                   >
                     {buildPreviewImage(app) && (
-                      <div className="absolute inset-0 opacity-40">
+                      <div className="absolute inset-0 opacity-70">
                         <img
                           src={buildPreviewImage(app)}
                           alt=""
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/20 to-black/70" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/10 to-black/50" />
                       </div>
                     )}
                     <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-90 hidden md:block">
@@ -343,8 +343,7 @@ export default function AppTadaPage() {
                     </div>
 
                     <div className="relative z-10 max-w-[70%]">
-                      <h3 className="text-3xl font-extrabold mb-3 tracking-tight">{app.ogTitle || app.name}</h3>
-                      <p className="text-white/90 text-base font-medium leading-relaxed line-clamp-3">
+                      <p className="text-white/90 text-sm sm:text-base font-medium leading-relaxed line-clamp-3">
                         {app.ogDescription || app.tagline || app.description}
                       </p>
                       <div className="mt-4 text-xs text-white/70 font-semibold uppercase tracking-widest">
@@ -362,7 +361,7 @@ export default function AppTadaPage() {
             <div className="mb-10 h-56 rounded-[2rem] bg-gray-200 animate-pulse"></div>
           ) : null}
 
-          <div className="space-y-5 mb-12">
+          <div className="grid gap-5 mb-12 md:grid-cols-2">
             {appsLoading && listedApps.length === 0 ? (
               [1, 2, 3].map((i) => (
                 <div key={i} className="h-40 rounded-[2rem] bg-gray-100 animate-pulse"></div>
