@@ -76,13 +76,8 @@ const formatDate = (value: number): string => {
   }
 };
 
-const buildIconUrl = (url: string, name: string): string => {
-  const host = safeHost(url);
-  if (host) {
-    return `https://icon.horse/icon/${host}`;
-  }
-  return `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(name || 'App')}`;
-};
+const buildIconUrl = (_url: string, name: string): string =>
+  `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(name || 'App')}`;
 
 const buildDescriptionText = (desc?: Partial<AppDescription> & { description?: string }) => {
   if (!desc) return 'Web application';
@@ -91,6 +86,11 @@ const buildDescriptionText = (desc?: Partial<AppDescription> & { description?: s
     return desc.keyFeatures.slice(0, 3).join(' • ');
   }
   return desc.whyNow || desc.oneLiner || 'Web application';
+};
+
+const stripUndefined = <T extends Record<string, unknown>>(value: T): T => {
+  const entries = Object.entries(value).filter(([, v]) => v !== undefined);
+  return Object.fromEntries(entries) as T;
 };
 
 const mapDescriptionToWebApp = (url: string, desc: AppDescription, id?: string, createdAt?: any): WebApp => {
@@ -133,7 +133,7 @@ const mapDocToWebApp = (data: DocumentData, id: string): WebApp | null => {
     tagline: data?.tagline || descriptionText || 'Web application',
     description: descriptionText || buildDescriptionText(),
     category: data?.category || 'Web App',
-    iconUrl: data?.iconUrl || buildIconUrl(url, name),
+    iconUrl: buildIconUrl(url, name),
     createdAt: normalizeCreatedAt(data?.createdAt),
     ogTitle: data?.ogTitle,
     ogDescription: data?.ogDescription,
@@ -212,15 +212,7 @@ export default function AppTadaPage() {
     const trimmed = url.trim();
     if (!trimmed) throw new Error('URL required');
 
-    let metadata: { title?: string; description?: string; image?: string; siteName?: string } | null = null;
-    try {
-      const response = await fetch(`/api/og-metadata?url=${encodeURIComponent(trimmed)}`);
-      if (response.ok) {
-        metadata = await response.json();
-      }
-    } catch (err) {
-      console.warn('Failed to load OG metadata', err);
-    }
+    const metadata: { title?: string; description?: string; image?: string; siteName?: string } | null = null;
 
     const derivedName = metadata?.title || safeHost(trimmed) || 'Web Application';
     const derivedDescription = metadata?.description || 'รายละเอียดกำลังจัดทำ';
@@ -241,12 +233,13 @@ export default function AppTadaPage() {
 
     const { id: _id, createdAt: _createdAt, ...payload } = newApp;
     try {
-      const ref = await addDoc(collection(db, 'apps'), {
+      const firestorePayload = stripUndefined({
         ...payload,
         createdAt: serverTimestamp(),
         createdBy: (user?.email || 'unknown').toLowerCase(),
         createdByUid: user?.id || null,
       });
+      const ref = await addDoc(collection(db, 'apps'), firestorePayload);
       newApp.id = ref.id;
     } catch (err: any) {
       setAppsError(err?.message || 'Failed to save to Firestore');
@@ -383,7 +376,7 @@ export default function AppTadaPage() {
                   <div className="flex gap-5">
                     <div className="flex-shrink-0">
                       <img
-                        src={app.iconUrl}
+                        src={buildIconUrl(app.url, app.name)}
                         alt={app.name}
                         className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-gray-50"
                         onError={(e) => {

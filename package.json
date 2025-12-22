@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "tsx --watch server/index.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node start.mjs"
+    "start": "tsx server/index.ts"
   },
   "dependencies": {
+    "@dataconnect/admin-generated": "file:src/dataconnect-admin-generated",
     "@dataconnect/generated": "file:src/dataconnect-generated",
     "@google/generative-ai": "^0.17.0",
     "@react-three/fiber": "^9.4.2",
